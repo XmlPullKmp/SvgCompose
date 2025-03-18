@@ -15,20 +15,6 @@ pluginManagement {
     }
 }
 
-plugins {
-    id("com.gradle.develocity") version "3.19.2"
-}
-
-develocity {
-    buildScan {
-        termsOfUseUrl = "https://gradle.com/terms-of-service"
-        termsOfUseAgree = "yes"
-        // TODO: workaround for https://github.com/gradle/gradle/issues/22879.
-        val isCI = providers.environmentVariable("CI").isPresent
-        publishing.onlyIf { isCI }
-    }
-}
-
 dependencyResolutionManagement {
     repositories {
         google {
@@ -42,19 +28,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "valkyrie"
+rootProject.name = "SvgCompose"
 
-include("idea-plugin")
-include("cli")
-
-include("components:extensions")
-include("components:generator:common")
-include("components:generator:iconpack")
-include("components:generator:imagevector")
-include("components:ir")
-include("components:ir-compose")
-include("components:parser:ktfile")
-include("components:parser:svgxml")
-include("components:psi:iconpack")
-include("components:psi:imagevector")
-include("playground:app")
+include(":parser")
