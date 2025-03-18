@@ -1,7 +1,5 @@
 package io.github.composegears.valkyrie.parser.util
 
-import java.util.Locale
-
 fun String.removePrefix(prefix: CharSequence): String {
     if (startsWith(prefix, ignoreCase = true)) {
         return substring(prefix.length)
@@ -10,5 +8,5 @@ fun String.removePrefix(prefix: CharSequence): String {
 }
 
 fun String.capitalized(): String = replaceFirstChar {
-    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+    if (it.isLowerCase()) it.titlecase() else it.toString()
 }

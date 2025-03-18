@@ -1,5 +1,6 @@
 package io.github.composegears.valkyrie.parser.xml
 
+import com.fleeksoft.io.exception.ArrayIndexOutOfBoundsException
 import io.github.composegears.valkyrie.ir.IrPathNode
 import kotlin.math.min
 
@@ -83,9 +84,7 @@ internal object PathParser {
             endPosition = result.endPosition
 
             if (startPosition < endPosition) {
-                results[count++] = java.lang.Float.parseFloat(
-                    s.substring(startPosition, endPosition),
-                )
+                results[count++] = s.substring(startPosition, endPosition).toFloat()
             }
 
             startPosition = if (result.endWithNegativeOrDot) {
@@ -125,13 +124,13 @@ internal object PathParser {
             isExponential = false
             when (s[currentIndex]) {
                 ' ', ',' -> foundSeparator = true
-                '-' ->
+                '-'      ->
                     // The negative sign following a 'e' or 'E' is not a separator.
                     if (currentIndex != start && !isPrevExponential) {
                         foundSeparator = true
                         result.endWithNegativeOrDot = true
                     }
-                '.' ->
+                '.'      ->
                     if (!secondDot) {
                         secondDot = true
                     } else {

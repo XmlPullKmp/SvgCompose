@@ -6,13 +6,16 @@ agp = "8.7.3"
 android-compileSdk = "34"
 android-minSdk = "24"
 maven-publish = "0.30.0"
+kotlinx-io = "0.7.0"
+xmlpullkmp = "1.0.0"
 
 
 [libraries]
 
 android-build-tools = "com.android.tools:sdk-common:31.9.0"
 xpp3 = "org.ogce:xpp3:1.1.6"
-
+kotlinx-io = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
+xmlpullkmp = { module = "io.github.xmlpullkmp:xmlpullkmp", version.ref = "xmlpullkmp" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]

@@ -1,11 +1,10 @@
 package valkyrie.ir.util
 
-import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isTrue
-import io.github.composegears.valkyrie.ir.*
-import org.junit.jupiter.api.Test
+import io.github.composegears.valkyrie.ir.IrColor
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 private data class ColorHex(
     val expected: String,
@@ -16,8 +15,8 @@ class HexParserTest {
 
     @Test
     fun `transparent color test`() {
-        assertThat(IrColor("#0000ffcc").isTransparent()).isTrue()
-        assertThat(IrColor("#3C545454").isTransparent()).isFalse()
+        assertTrue(IrColor("#0000ffcc").isTransparent())
+        assertFalse(IrColor("#3C545454").isTransparent())
     }
 
     @Test
@@ -53,7 +52,7 @@ class HexParserTest {
         )
 
         colors.forEach {
-            assertThat(it.actual).isEqualTo(it.expected)
+            assertEquals(it.actual, it.expected)
         }
     }
 }

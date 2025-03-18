@@ -42,6 +42,8 @@ kotlin {
             implementation(compose.ui)
             implementation(libs.android.build.tools)
             implementation(libs.xpp3)
+            implementation(libs.kotlinx.io)
+            implementation(libs.xmlpullkmp)
         }
 
         commonTest.dependencies {

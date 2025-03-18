@@ -1,10 +1,7 @@
 package io.github.composegears.valkyrie.parser.xml.ext
 
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParser.END_DOCUMENT
-import org.xmlpull.v1.XmlPullParser.END_TAG
-import org.xmlpull.v1.XmlPullParser.START_TAG
-import org.xmlpull.v1.XmlPullParserException
+import io.github.xmlpullkmp.XmlPullParser
+
 
 internal fun XmlPullParser.dpValueAsFloat(name: String): Float? {
     return getAttribute(name)
@@ -18,20 +15,20 @@ internal fun XmlPullParser.valueAsString(name: String): String? = getAttribute(n
 
 internal fun XmlPullParser.valueAsFloat(name: String): Float? = getAttribute(name)?.toFloatOrNull()
 
-internal fun XmlPullParser.getAttribute(name: String): String? = getAttributeValue(null, name)
+internal fun XmlPullParser.getAttribute(name: String): String? = getAttributeValue("", name)
 
 internal fun XmlPullParser.seekToStartTag(): XmlPullParser {
     var type = next()
 
-    while (type != START_TAG && type != END_DOCUMENT) {
+    while (type != XmlPullParser.START_TAG && type != XmlPullParser.END_DOCUMENT) {
         // Empty loop
         type = next()
     }
 
-    if (type != START_TAG) {
-        throw XmlPullParserException("No start tag found")
+    if (type != XmlPullParser.START_TAG) {
+        throw Exception("No start tag found")
     }
     return this
 }
 
-internal fun XmlPullParser.isAtEnd() = eventType == END_DOCUMENT || (depth < 1 && eventType == END_TAG)
+internal fun XmlPullParser.isAtEnd() = getEventType() == XmlPullParser.END_DOCUMENT || (getDepth() < 1 && getEventType() == XmlPullParser.END_TAG)

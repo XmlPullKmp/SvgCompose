@@ -6,7 +6,7 @@ import io.github.composegears.valkyrie.ir.IrPathNode
 import io.github.composegears.valkyrie.ir.IrStrokeLineCap
 import io.github.composegears.valkyrie.ir.IrStrokeLineJoin
 import io.github.composegears.valkyrie.parser.xml.PathParser
-import org.xmlpull.v1.XmlPullParser
+import io.github.xmlpullkmp.XmlPullParser
 
 internal fun XmlPullParser.valueAsPathData(): List<IrPathNode> {
     return PathParser.parsePathString(getAttribute("android:pathData").orEmpty())
