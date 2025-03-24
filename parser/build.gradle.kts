@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.lemcoder.mikrosoundfont"
+    namespace = "io.github.xmlpullkmp.svg2compose"
     defaultConfig {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -27,8 +27,6 @@ kotlin {
             add(iosArm64())
             add(iosSimulatorArm64())
             add(iosX64())
-            add(macosArm64())
-            add(macosX64())
         }
     }
 
@@ -38,11 +36,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.material3)
             implementation(compose.ui)
-            implementation(libs.android.build.tools)
-            implementation(libs.xpp3)
-            implementation(libs.kotlinx.io)
             implementation(libs.xmlpullkmp)
         }
 
