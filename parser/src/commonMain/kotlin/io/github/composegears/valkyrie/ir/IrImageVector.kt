@@ -56,6 +56,14 @@ enum class IrStrokeLineJoin {
     Bevel,
 }
 
+enum class IrTransformType {
+    Rotate,
+    ScaleX,
+    ScaleY,
+    TranslateX,
+    TranslateY,
+}
+
 sealed interface IrFill {
     data class Color(val irColor: IrColor) : IrFill
 

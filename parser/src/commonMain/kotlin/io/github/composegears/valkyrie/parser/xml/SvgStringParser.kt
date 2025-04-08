@@ -1,10 +1,7 @@
 package io.github.composegears.valkyrie.parser.xml
 
 import com.fleeksoft.io.byteInputStream
-import io.github.composegears.valkyrie.ir.IrFill
-import io.github.composegears.valkyrie.ir.IrImageVector
-import io.github.composegears.valkyrie.ir.IrStroke
-import io.github.composegears.valkyrie.ir.IrVectorNode
+import io.github.composegears.valkyrie.ir.*
 import io.github.composegears.valkyrie.parser.xml.ext.*
 import io.github.xmlpullkmp.XmlPullParser
 import io.github.xmlpullkmp.XmlPullParserKmp
@@ -14,16 +11,16 @@ internal object SvgStringParser {
     fun parse(text: String): IrImageVector {
         val parser = prepareParser(text)
 
-        check(parser.getName() == "vector") { "The start tag must be <vector>!" }
+        check(parser.getName() == "svg") { "The start tag must be <svg>!" }
 
-        val attributes = parseVectorAttributes(parser)
+        val attributes = parseSVGAttributes(parser)
 
         return IrImageVector(
             defaultWidth = attributes.width,
             defaultHeight = attributes.height,
             viewportWidth = attributes.viewportWidth,
             viewportHeight = attributes.viewportHeight,
-            nodes = parseNodes(parser),
+            nodes = parseSVGNodes(parser),
         )
     }
 }
@@ -35,18 +32,31 @@ private fun prepareParser(text: String): XmlPullParser {
     }
 }
 
-private fun parseVectorAttributes(parser: XmlPullParser): VectorAttributes {
+private fun parseSVGAttributes(parser: XmlPullParser): VectorAttributes {
+    val (viewportWidth, viewportHeight) = parser.valueAsString(VIEW_BOX)?.let { viewBox ->
+        viewBox.split("[ ,]+".toRegex())
+            .takeIf { it.size >= 4 }
+            ?.mapNotNull { it.toFloatOrNull() }
+            ?.let { Pair(it[2], it[3]) }
+    } ?: Pair(0f, 0f)
+
     return VectorAttributes(
         width = parser.dpValueAsFloat(WIDTH) ?: 0f,
         height = parser.dpValueAsFloat(HEIGHT) ?: 0f,
-        viewportWidth = parser.valueAsFloat(VIEWPORT_WIDTH) ?: 0f,
-        viewportHeight = parser.valueAsFloat(VIEWPORT_HEIGHT) ?: 0f,
+        viewportWidth = viewportWidth,
+        viewportHeight = viewportHeight,
     )
 }
 
-private fun parseNodes(parser: XmlPullParser): List<IrVectorNode> {
+//--- COMPLETE
+
+private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
     val nodes = mutableListOf<IrVectorNode>()
     var currentGroup: IrVectorNode.IrGroup? = null
+
+    // TODO: Split IrVectorNode (separate group, add shapes)
+    // TODO: ClipPaths stored/accessible as MutableList<IrPathNode>
+    val clipPaths = mutableMapOf<String, MutableList<IrVectorNode>>()
 
     parser.next()
 
@@ -63,15 +73,15 @@ private fun parseNodes(parser: XmlPullParser): List<IrVectorNode> {
                         }
                     }
                     GROUP     -> {
-                        val group = parseGroup(parser)
+                        val group = parseGroup(parser, clipPaths)
                         currentGroup = group
                         nodes.add(group)
                     }
                     CLIP_PATH -> {
-                        currentGroup?.clipPathData?.addAll(parser.valueAsPathData())
+                        clipPaths += parseClipPath(parser)
                     }
-                    GRADIENT  -> handleGradient(parser, currentGroup, nodes)
-                    ITEM      -> handleItem(parser, currentGroup, nodes)
+//                    GRADIENT  -> handleGradient(parser, currentGroup, nodes)
+//                    ITEM      -> handleItem(parser, currentGroup, nodes)
                 }
             }
         }
@@ -105,68 +115,116 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
     )
 }
 
-private fun parseGroup(parser: XmlPullParser): IrVectorNode.IrGroup {
+private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList<IrVectorNode>>): IrVectorNode.IrGroup {
+    // TODO: clipPath flattening ?
+    val clipPathData = parser.valueAsString(CLIP_PATH)?.let { clipUrl ->
+        val clipPathId = clipUrl.substringAfter(URL_START).substringBefore(COMMON_END)
+        clipPaths[clipPathId] ?: mutableListOf()
+    }
+
+    val transform = parser.valueAsString(TRANSFORM)
+
     return IrVectorNode.IrGroup(
-        name = parser.valueAsString(NAME).orEmpty(),
-        rotate = parser.valueAsFloat(ROTATION) ?: 0f,
-        pivotX = parser.valueAsFloat(PIVOT_X) ?: 0f,
-        pivotY = parser.valueAsFloat(PIVOT_Y) ?: 0f,
-        scaleX = parser.valueAsFloat(SCALE_X) ?: 1f,
-        scaleY = parser.valueAsFloat(SCALE_Y) ?: 1f,
-        translationX = parser.valueAsFloat(TRANSLATE_X) ?: 0f,
-        translationY = parser.valueAsFloat(TRANSLATE_Y) ?: 0f,
+        name = parser.valueAsString(ID).orEmpty(),
+        rotate = parseTransformAttributes(transform, IrTransformType.Rotate) ?: 0f,
+        pivotX = parser.valueAsFloat(PIVOT_X) ?: 0f, // TODO: ?
+        pivotY = parser.valueAsFloat(PIVOT_Y) ?: 0f, // TODO: ?
+        scaleX = parseTransformAttributes(transform, IrTransformType.ScaleX) ?: 1f,
+        scaleY = parseTransformAttributes(transform, IrTransformType.ScaleY) ?: 1f,
+        translationX = parseTransformAttributes(transform, IrTransformType.TranslateX) ?: 0f,
+        translationY = parseTransformAttributes(transform, IrTransformType.TranslateY) ?: 0f,
         paths = mutableListOf(),
         clipPathData = mutableListOf(),
     )
 }
 
-private fun handleGradient(
-    parser: XmlPullParser,
-    currentGroup: IrVectorNode.IrGroup?,
-    nodes: MutableList<IrVectorNode>,
-) {
-    val gradient = parseGradient(parser) ?: return
+private fun parseTransformAttributes(transform: String?, type: IrTransformType): Float? {
+    if(transform.isNullOrEmpty()) return null
 
-    val lastPath = currentGroup?.paths?.removeLastOrNull() ?: nodes.removeLastOrNull() ?: return
-    if (lastPath is IrVectorNode.IrPath && lastPath.fill == null) {
-        val gradientPath = lastPath.copy(fill = gradient)
-        if (currentGroup != null) {
-            currentGroup.paths.add(gradientPath)
-        } else {
-            nodes.add(gradientPath)
-        }
+    return when (type) {
+        IrTransformType.Rotate -> transform
+            .substringAfter(ROTATE_START)
+            .substringBefore(COMMON_END)
+            .split(" ")[0].toFloat()
+        IrTransformType.ScaleX -> transform
+            .substringAfter(SCALE_START)
+            .substringBefore(COMMON_END)
+            .split(" ")[0].toFloat()
+        // TODO: check if gets scaleY properly
+        // (if only 1 argument present scaleY should be the same as scaleX)
+        IrTransformType.ScaleY -> transform
+            .substringAfter(SCALE_START)
+            .substringBefore(COMMON_END)
+            .split(" ").take(2).lastOrNull()?.toFloat() ?: 0f
+        IrTransformType.TranslateX -> transform
+            .substringAfter(TRANSLATE_START)
+            .substringBefore(COMMON_END)
+            .split(" ")[0].toFloat()
+        IrTransformType.TranslateY -> transform
+            .substringAfter(TRANSLATE_START)
+            .substringBefore(COMMON_END)
+            .split(" ").getOrNull(1)?.toFloat() ?: 0f
     }
 }
 
-private fun parseGradient(parser: XmlPullParser): IrFill? {
-    return when (parser.valueAsString(TYPE)) {
-        LINEAR -> {
-            val startX = parser.valueAsFloat(START_X) ?: 0f
-            val startY = parser.valueAsFloat(START_Y) ?: 0f
-            val endX = parser.valueAsFloat(END_X) ?: 0f
-            val endY = parser.valueAsFloat(END_Y) ?: 0f
+private fun parseClipPath(parser: XmlPullParser): Pair<String, MutableList<IrVectorNode>> {
+    val clipPathId = parser.valueAsString(ID) ?: return Pair("", mutableListOf())
+    val clipNodes = mutableListOf<IrVectorNode>()
 
-            IrFill.LinearGradient(
-                startY = startY,
-                startX = startX,
-                endY = endY,
-                endX = endX,
-            )
-        }
-        RADIAL -> {
-            val radius = parser.valueAsFloat(GRADIENT_RADIUS) ?: 0f
-            val centerX = parser.valueAsFloat(CENTER_X) ?: 0f
-            val centerY = parser.valueAsFloat(CENTER_Y) ?: 0f
 
-            IrFill.RadialGradient(
-                radius = radius,
-                centerX = centerX,
-                centerY = centerY,
-            )
-        }
-        else                                              -> null
-    }
+
+    return Pair(clipPathId, clipNodes)
 }
+
+// TODO: Handle gradients
+
+//private fun handleGradient(
+//    parser: XmlPullParser,
+//    currentGroup: IrVectorNode.IrGroup?,
+//    nodes: MutableList<IrVectorNode>,
+//) {
+//    val gradient = parseGradient(parser) ?: return
+//
+//    val lastPath = currentGroup?.paths?.removeLastOrNull() ?: nodes.removeLastOrNull() ?: return
+//    if (lastPath is IrVectorNode.IrPath && lastPath.fill == null) {
+//        val gradientPath = lastPath.copy(fill = gradient)
+//        if (currentGroup != null) {
+//            currentGroup.paths.add(gradientPath)
+//        } else {
+//            nodes.add(gradientPath)
+//        }
+//    }
+//}
+
+//private fun parseGradient(parser: XmlPullParser): IrFill? {
+//    return when (parser.valueAsString(TYPE)) {
+//        LINEAR -> {
+//            val startX = parser.valueAsFloat(START_X) ?: 0f
+//            val startY = parser.valueAsFloat(START_Y) ?: 0f
+//            val endX = parser.valueAsFloat(END_X) ?: 0f
+//            val endY = parser.valueAsFloat(END_Y) ?: 0f
+//
+//            IrFill.LinearGradient(
+//                startY = startY,
+//                startX = startX,
+//                endY = endY,
+//                endX = endX,
+//            )
+//        }
+//        RADIAL -> {
+//            val radius = parser.valueAsFloat(GRADIENT_RADIUS) ?: 0f
+//            val centerX = parser.valueAsFloat(CENTER_X) ?: 0f
+//            val centerY = parser.valueAsFloat(CENTER_Y) ?: 0f
+//
+//            IrFill.RadialGradient(
+//                radius = radius,
+//                centerX = centerX,
+//                centerY = centerY,
+//            )
+//        }
+//        else                                              -> null
+//    }
+//}
 
 private fun handleItem(parser: XmlPullParser, currentGroup: IrVectorNode.IrGroup?, nodes: MutableList<IrVectorNode>) {
     val offset = parser.valueAsFloat(OFFSET) ?: 0f
@@ -181,16 +239,34 @@ private fun handleItem(parser: XmlPullParser, currentGroup: IrVectorNode.IrGroup
     }
 }
 
-// XML tag names
+// SVG tag names
 private const val CLIP_PATH = "clip-path"
-private const val GROUP = "group"
+
+private const val GROUP = "g"
 private const val PATH = "path"
+
 private const val GRADIENT = "gradient"
 private const val ITEM = "item"
 
-// XML  names
-private const val LINEAR = "linear"
-private const val RADIAL = "radial"
+// SVG Common Attribute names
+private const val ID = "id"
+private const val TRANSFORM = "transform"
+
+// SVG Root attribute names
+private const val WIDTH = "width"
+private const val HEIGHT = "height"
+private const val VIEW_BOX = "viewBox"
+
+// SVG Path Attribute Names
+private const val PATH_DATA = "d"
+
+// SVG Functions
+private const val ROTATE_START = "rotate("
+private const val TRANSLATE_START = "translate("
+private const val SCALE_START = "scale("
+private const val URL_START = "url(#"
+
+private const val COMMON_END = ")"
 
 // Group XML attribute names
 const val ROTATION = "android:rotation"
@@ -210,25 +286,9 @@ private const val STROKE_MITER_LIMIT = "android:strokeMiterLimit"
 private const val STROKE_COLOR = "android:strokeColor"
 private const val FILL_COLOR = "android:fillColor"
 
-// Gradient XML attribute names
-private const val TYPE = "android:type"
-private const val START_Y = "android:startY"
-private const val START_X = "android:startX"
-private const val END_Y = "android:endY"
-private const val END_X = "android:endX"
-private const val GRADIENT_RADIUS = "android:gradientRadius"
-private const val CENTER_X = "android:centerX"
-private const val CENTER_Y = "android:centerY"
-
 // Item XML attribute names
 private const val OFFSET = "android:offset"
 private const val COLOR = "android:color"
-
-// Vector XML attribute names
-private const val WIDTH = "android:width"
-private const val HEIGHT = "android:height"
-private const val VIEWPORT_WIDTH = "android:viewportWidth"
-private const val VIEWPORT_HEIGHT = "android:viewportHeight"
 
 private data class VectorAttributes(
     val width: Float,
