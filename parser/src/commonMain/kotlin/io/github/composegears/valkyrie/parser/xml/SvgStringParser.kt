@@ -12,7 +12,7 @@ import io.github.composegears.valkyrie.parser.xml.ext.*
 import io.github.xmlpullkmp.XmlPullParser
 import io.github.xmlpullkmp.XmlPullParserKmp
 
-internal object SvgStringParser {
+object SvgStringParser {
 
     fun parse(text: String): IrImageVector {
         val parser = prepareParser(text)
@@ -97,11 +97,11 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
 }
 
 private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
-    val fillColor = parser.valueAsIrColor(FILL_COLOR)
-    val strokeColor = parser.valueAsIrColor(STROKE_COLOR)
+    val fillColor = parser.valueAsIrColor(FILL)
+    val strokeColor = parser.valueAsIrColor(STROKE)
 
     return IrVectorNode.IrPath(
-        name = parser.valueAsString(NAME).orEmpty(),
+        name = parser.valueAsString(ID).orEmpty(),
         fill = when {
             fillColor != null && !fillColor.isTransparent() -> IrFill.Color(fillColor)
             else -> null
@@ -110,8 +110,8 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
             strokeColor != null && !strokeColor.isTransparent() -> IrStroke.Color(strokeColor)
             else -> null
         },
-        strokeAlpha = parser.valueAsFloat(STROKE_ALPHA) ?: 1f,
-        fillAlpha = parser.valueAsFloat(FILL_ALPHA) ?: 1f,
+        strokeAlpha = parser.valueAsFloat(STROKE_OPACITY) ?: 1f,
+        fillAlpha = parser.valueAsFloat(FILL_OPACITY) ?: 1f,
         strokeLineWidth = parser.valueAsFloat(STROKE_WIDTH) ?: 0f,
         strokeLineCap = parser.valueAsStrokeCap(),
         strokeLineJoin = parser.valueAsStrokeLineJoin(),
@@ -285,64 +285,51 @@ private fun parseTransformOps(transformString: String): List<TransformOp> {
 //    }
 //}
 
-private fun handleItem(parser: XmlPullParser, currentGroup: IrVectorNode.IrGroup?, nodes: MutableList<IrVectorNode>) {
-    val offset = parser.valueAsFloat(OFFSET) ?: 0f
-    val color = parser.valueAsIrColor(COLOR) ?: return
-    val colorStop = IrFill.ColorStop(offset, color)
-
-    val lastPath = (currentGroup?.paths?.last() ?: nodes.last()) as? IrVectorNode.IrPath
-    when (val fill = lastPath?.fill) {
-        is IrFill.LinearGradient -> fill.colorStops.add(colorStop)
-        is IrFill.RadialGradient -> fill.colorStops.add(colorStop)
-        else -> {}
-    }
-}
+// TODO: Handle gradients
+//private fun handleItem(parser: XmlPullParser, currentGroup: IrVectorNode.IrGroup?, nodes: MutableList<IrVectorNode>) {
+//    val offset = parser.valueAsFloat(OFFSET) ?: 0f
+//    val color = parser.valueAsIrColor(COLOR) ?: return
+//    val colorStop = IrFill.ColorStop(offset, color)
+//
+//    val lastPath = (currentGroup?.paths?.last() ?: nodes.last()) as? IrVectorNode.IrPath
+//    when (val fill = lastPath?.fill) {
+//        is IrFill.LinearGradient -> fill.colorStops.add(colorStop)
+//        is IrFill.RadialGradient -> fill.colorStops.add(colorStop)
+//        else -> {}
+//    }
+//}
 
 // SVG tag names
 private const val CLIP_PATH = "clip-path"
 private const val GROUP = "g"
 private const val PATH = "path"
 
-private const val GRADIENT = "gradient"
-private const val ITEM = "item"
-
-// SVG Common Attribute names
+// SVG Common Properties names
 private const val ID = "id"
 private const val TRANSFORM = "transform"
 
-// SVG Root attribute names
+// SVG Root Properties names
 private const val WIDTH = "width"
 private const val HEIGHT = "height"
 private const val VIEW_BOX = "viewBox"
 
-// SVG Path Attribute Names
-private const val PATH_DATA = "d"
-
-// SVG Transform Attributes Names
+// SVG Transform Properties Names
 private const val TRANSLATE = "translate"
 private const val ROTATE = "rotate"
 private const val SCALE = "scale"
 
+// SVG Path Properties Names
+private const val FILL = "fill"
+private const val FILL_OPACITY = "fill-opacity"
+
+private const val STROKE = "stroke"
+private const val STROKE_OPACITY = "stroke-opacity"
+private const val STROKE_WIDTH = "stroke-width"
+private const val STROKE_MITER_LIMIT = "stroke-miterlimit"
+
 // SVG Functions // TODO: Review
-private const val ROTATE_START = "rotate("
-private const val TRANSLATE_START = "translate("
-private const val SCALE_START = "scale("
 private const val URL_START = "url(#"
-
 private const val COMMON_END = ")"
-
-// Path XML attribute names
-private const val NAME = "android:name"
-private const val FILL_ALPHA = "android:fillAlpha"
-private const val STROKE_ALPHA = "android:strokeAlpha"
-private const val STROKE_WIDTH = "android:strokeWidth"
-private const val STROKE_MITER_LIMIT = "android:strokeMiterLimit"
-private const val STROKE_COLOR = "android:strokeColor"
-private const val FILL_COLOR = "android:fillColor"
-
-// Item XML attribute names
-private const val OFFSET = "android:offset"
-private const val COLOR = "android:color"
 
 private data class VectorAttributes(
     val width: Float,

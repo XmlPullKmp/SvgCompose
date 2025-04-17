@@ -9,32 +9,49 @@ import io.github.composegears.valkyrie.parser.xml.PathParser
 import io.github.xmlpullkmp.XmlPullParser
 
 internal fun XmlPullParser.valueAsPathData(): List<IrPathNode> {
-    return PathParser.parsePathString(getAttribute("android:pathData").orEmpty())
+    return PathParser.parsePathString(getAttribute(PATH_DATA).orEmpty())
 }
 
 internal fun XmlPullParser.valueAsFillType(): IrPathFillType {
-    return when (getAttribute("android:fillType")) {
-        "evenOdd" -> IrPathFillType.EvenOdd
-        else -> IrPathFillType.NonZero
+    return when (getAttribute(FILL_TYPE)) {
+        EVENODD -> IrPathFillType.EvenOdd
+        NONZERO -> IrPathFillType.NonZero
+        else    -> IrPathFillType.NonZero
     }
 }
 
 internal fun XmlPullParser.valueAsStrokeCap(): IrStrokeLineCap {
-    val value = getAttribute("android:strokeLineCap")
+    val value = getAttribute(STROKE_LINE_CAP)
 
     return IrStrokeLineCap.entries
-        .find { it.name.equals(value, ignoreCase = true) }
+        .find { it.svgValue.equals(value, ignoreCase = true) }
         ?: IrStrokeLineCap.Butt
 }
 
 internal fun XmlPullParser.valueAsStrokeLineJoin(): IrStrokeLineJoin {
-    val value = getAttribute("android:strokeLineJoin")
+    val value = getAttribute(STROKE_LINE_JOIN)
 
     return IrStrokeLineJoin.entries
-        .find { it.name.equals(value, ignoreCase = true) }
+        .find { it.svgValue.equals(value, ignoreCase = true) }
         ?: IrStrokeLineJoin.Miter
 }
 
 internal fun XmlPullParser.valueAsIrColor(name: String): IrColor? {
     return getAttribute(name)?.let { IrColor(it) }
 }
+
+// SVG Path Attribute Names
+private const val PATH_DATA = "d"
+
+private const val STYLE = "style"
+
+private const val FILL = "fill"
+private const val STROKE = "stroke"
+private const val STROKE_WIDTH = "stroke-width"
+private const val STROKE_LINE_CAP = "stroke-linecap"
+private const val STROKE_LINE_JOIN = "stroke-linejoin"
+
+// SVG Fill type
+private const val FILL_TYPE = "fill-rule"
+private const val EVENODD = "evenodd"
+private const val NONZERO = "nonzero"

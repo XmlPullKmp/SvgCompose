@@ -74,16 +74,20 @@ enum class IrPathFillType {
     NonZero,
 }
 
-enum class IrStrokeLineCap {
-    Butt,
-    Round,
-    Square,
+enum class IrStrokeLineCap(val svgValue: String) {
+    Butt("butt"),
+    Round("round"),
+    Square( "square"),
 }
 
-enum class IrStrokeLineJoin {
-    Miter,
-    Round,
-    Bevel,
+// TODO: Add support for miter-clip and arcs
+// https://svgwg.org/svg2-draft/painting.html#LineJoin
+enum class IrStrokeLineJoin(val svgValue: String) {
+    Miter("miter"),
+    Round("round"),
+    Bevel("bevel"),
+//    MiterClip("miter-clip"),
+//    Arcs("arcs")
 }
 
 sealed interface IrFill {
