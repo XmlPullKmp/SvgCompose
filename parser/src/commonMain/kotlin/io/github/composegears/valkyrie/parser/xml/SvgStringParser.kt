@@ -2,6 +2,12 @@ package io.github.composegears.valkyrie.parser.xml
 
 import com.fleeksoft.io.byteInputStream
 import io.github.composegears.valkyrie.ir.*
+import io.github.composegears.valkyrie.ir.TransformOp.*
+import io.github.composegears.valkyrie.parser.util.Matrix3x3
+import io.github.composegears.valkyrie.parser.util.ext.decomposeToVectorTransform
+import io.github.composegears.valkyrie.parser.util.ext.preRotate
+import io.github.composegears.valkyrie.parser.util.ext.preScale
+import io.github.composegears.valkyrie.parser.util.ext.preTranslate
 import io.github.composegears.valkyrie.parser.xml.ext.*
 import io.github.xmlpullkmp.XmlPullParser
 import io.github.xmlpullkmp.XmlPullParserKmp
@@ -64,7 +70,7 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
         when (parser.getEventType()) {
             XmlPullParser.START_TAG -> {
                 when (parser.getName()) {
-                    PATH      -> {
+                    PATH -> {
                         val path = parsePath(parser)
                         if (currentGroup != null) {
                             currentGroup.paths.add(path)
@@ -72,16 +78,16 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
                             nodes.add(path)
                         }
                     }
-                    GROUP     -> {
+
+                    GROUP -> {
                         val group = parseGroup(parser, clipPaths)
                         currentGroup = group
                         nodes.add(group)
                     }
+
                     CLIP_PATH -> {
                         clipPaths += parseClipPath(parser)
                     }
-//                    GRADIENT  -> handleGradient(parser, currentGroup, nodes)
-//                    ITEM      -> handleItem(parser, currentGroup, nodes)
                 }
             }
         }
@@ -98,11 +104,11 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
         name = parser.valueAsString(NAME).orEmpty(),
         fill = when {
             fillColor != null && !fillColor.isTransparent() -> IrFill.Color(fillColor)
-            else                                            -> null
+            else -> null
         },
         stroke = when {
             strokeColor != null && !strokeColor.isTransparent() -> IrStroke.Color(strokeColor)
-            else                                                -> null
+            else -> null
         },
         strokeAlpha = parser.valueAsFloat(STROKE_ALPHA) ?: 1f,
         fillAlpha = parser.valueAsFloat(FILL_ALPHA) ?: 1f,
@@ -122,59 +128,112 @@ private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList
         clipPaths[clipPathId] ?: mutableListOf()
     }
 
-    val transform = parser.valueAsString(TRANSFORM)
+    val vectorTransform = parseTransform(parser.valueAsString(TRANSFORM) ?: "")
 
     return IrVectorNode.IrGroup(
         name = parser.valueAsString(ID).orEmpty(),
-        rotate = parseTransformAttributes(transform, IrTransformType.Rotate) ?: 0f,
-        pivotX = parser.valueAsFloat(PIVOT_X) ?: 0f, // TODO: ?
-        pivotY = parser.valueAsFloat(PIVOT_Y) ?: 0f, // TODO: ?
-        scaleX = parseTransformAttributes(transform, IrTransformType.ScaleX) ?: 1f,
-        scaleY = parseTransformAttributes(transform, IrTransformType.ScaleY) ?: 1f,
-        translationX = parseTransformAttributes(transform, IrTransformType.TranslateX) ?: 0f,
-        translationY = parseTransformAttributes(transform, IrTransformType.TranslateY) ?: 0f,
+        rotate = vectorTransform.rotation,
+        pivotX = vectorTransform.pivotX,
+        pivotY = vectorTransform.pivotY,
+        scaleX = vectorTransform.scaleX,
+        scaleY = vectorTransform.scaleY,
+        translationX = vectorTransform.translateX,
+        translationY = vectorTransform.translateY,
         paths = mutableListOf(),
         clipPathData = mutableListOf(),
     )
-}
-
-private fun parseTransformAttributes(transform: String?, type: IrTransformType): Float? {
-    if(transform.isNullOrEmpty()) return null
-
-    return when (type) {
-        IrTransformType.Rotate -> transform
-            .substringAfter(ROTATE_START)
-            .substringBefore(COMMON_END)
-            .split(" ")[0].toFloat()
-        IrTransformType.ScaleX -> transform
-            .substringAfter(SCALE_START)
-            .substringBefore(COMMON_END)
-            .split(" ")[0].toFloat()
-        // TODO: check if gets scaleY properly
-        // (if only 1 argument present scaleY should be the same as scaleX)
-        IrTransformType.ScaleY -> transform
-            .substringAfter(SCALE_START)
-            .substringBefore(COMMON_END)
-            .split(" ").take(2).lastOrNull()?.toFloat() ?: 0f
-        IrTransformType.TranslateX -> transform
-            .substringAfter(TRANSLATE_START)
-            .substringBefore(COMMON_END)
-            .split(" ")[0].toFloat()
-        IrTransformType.TranslateY -> transform
-            .substringAfter(TRANSLATE_START)
-            .substringBefore(COMMON_END)
-            .split(" ").getOrNull(1)?.toFloat() ?: 0f
-    }
 }
 
 private fun parseClipPath(parser: XmlPullParser): Pair<String, MutableList<IrVectorNode>> {
     val clipPathId = parser.valueAsString(ID) ?: return Pair("", mutableListOf())
     val clipNodes = mutableListOf<IrVectorNode>()
 
-
+    // TODO: clipPath flattening ?
 
     return Pair(clipPathId, clipNodes)
 }
+
+private fun parseTransform(transformString: String): VectorTransform {
+    val ops = parseTransformOps(transformString)
+    var matrix = Matrix3x3.Identity
+    var pivot: Pair<Float, Float>? = null
+
+    // First pass: Look for explicit pivot patterns
+    for (i in 0..ops.size - 3) {
+        val (t1, op, t2) = ops.slice(i..i+2)
+        if (t1 is Translate && t2 is Translate &&
+            t1.tx == -t2.tx && t1.ty == -t2.ty
+        ) {
+            pivot = t1.tx to t1.ty
+            when (op) {
+                is Rotate -> return VectorTransform(
+                    pivotX = pivot.first,
+                    pivotY = pivot.second,
+                    rotation = op.theta,
+                    translateX = matrix.e,
+                    translateY = matrix.f
+                )
+                is Scale -> return VectorTransform(
+                    pivotX = pivot.first,
+                    pivotY = pivot.second,
+                    scaleX = op.sx,
+                    scaleY = op.sy,
+                    translateX = matrix.e,
+                    translateY = matrix.f
+                )
+                else -> {}
+            }
+        }
+    }
+
+    // Second pass: Apply all operations to matrix
+    ops.forEach { op ->
+        matrix = when (op) {
+            is Translate -> matrix.preTranslate(op.tx, op.ty)
+            is Rotate -> matrix.preRotate(op.theta, op.cx, op.cy)
+            is Scale -> matrix.preScale(op.sx, op.sy)
+        }
+    }
+
+    // Decompose final matrix
+    return matrix.decomposeToVectorTransform().apply {
+        pivot?.let {
+            pivotX = it.first
+            pivotY = it.second
+        }
+    }
+}
+
+private fun parseTransformOps(transformString: String): List<TransformOp> {
+    val regex = Regex("""(\w+)\(([^)]*)\)""")
+    return regex.findAll(transformString.replace(",", " ")).map { match ->
+        val values = match.groupValues[2].split(' ').filter { it.isNotBlank() }.map { it.toFloat() }
+        when (match.groupValues[1]) {
+            TRANSLATE -> Translate(values[0], values.getOrElse(1) { 0f })
+            ROTATE -> when {
+                values.size >= 3 -> Rotate(values[0], values[1], values[2])
+                else -> Rotate(values[0])
+            }
+
+            SCALE -> Scale(values[0], values.getOrElse(1) { values[0] })
+            else -> throw IllegalArgumentException("Unsupported transform: ${match.groupValues[1]}")
+        }
+    }.toList()
+}
+
+//private fun detectPivot(ops: List<TransformOp>): Pair<Float, Float>? {
+//    if (ops.size < 3) return null
+//    val (preTranslate, _, postTranslate) = ops.take(3)
+//
+//    return when {
+//        preTranslate is Translate &&
+//                postTranslate is Translate &&
+//                preTranslate.tx == -postTranslate.tx &&
+//                preTranslate.ty == -postTranslate.ty -> Pair(preTranslate.tx, preTranslate.ty)
+//
+//        else -> null
+//    }
+//}
 
 // TODO: Handle gradients
 
@@ -235,13 +294,12 @@ private fun handleItem(parser: XmlPullParser, currentGroup: IrVectorNode.IrGroup
     when (val fill = lastPath?.fill) {
         is IrFill.LinearGradient -> fill.colorStops.add(colorStop)
         is IrFill.RadialGradient -> fill.colorStops.add(colorStop)
-        else                     -> {}
+        else -> {}
     }
 }
 
 // SVG tag names
 private const val CLIP_PATH = "clip-path"
-
 private const val GROUP = "g"
 private const val PATH = "path"
 
@@ -260,22 +318,18 @@ private const val VIEW_BOX = "viewBox"
 // SVG Path Attribute Names
 private const val PATH_DATA = "d"
 
-// SVG Functions
+// SVG Transform Attributes Names
+private const val TRANSLATE = "translate"
+private const val ROTATE = "rotate"
+private const val SCALE = "scale"
+
+// SVG Functions // TODO: Review
 private const val ROTATE_START = "rotate("
 private const val TRANSLATE_START = "translate("
 private const val SCALE_START = "scale("
 private const val URL_START = "url(#"
 
 private const val COMMON_END = ")"
-
-// Group XML attribute names
-const val ROTATION = "android:rotation"
-const val PIVOT_X = "android:pivotX"
-const val PIVOT_Y = "android:pivotY"
-const val SCALE_X = "android:scaleX"
-const val SCALE_Y = "android:scaleY"
-const val TRANSLATE_X = "android:translateX"
-const val TRANSLATE_Y = "android:translateY"
 
 // Path XML attribute names
 private const val NAME = "android:name"

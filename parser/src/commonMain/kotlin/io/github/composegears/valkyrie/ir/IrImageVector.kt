@@ -39,6 +39,36 @@ sealed interface IrVectorNode {
     ) : IrVectorNode
 }
 
+data class VectorTransform(
+    var pivotX: Float = 0f,
+    var pivotY: Float = 0f,
+    var rotation: Float = 0f,
+    var scaleX: Float = 1f,
+    var scaleY: Float = 1f,
+    var translateX: Float = 0f,
+    var translateY: Float = 0f,
+)
+
+internal sealed interface TransformOp {
+    data class Translate(
+        val tx: Float,
+        val ty: Float,
+    ) : TransformOp
+
+    data class Rotate(
+        val theta: Float,
+        val cx: Float = 0f,
+        val cy: Float = 0f,
+    ) : TransformOp
+
+    data class Scale(
+        val sx: Float,
+        val sy: Float,
+    ) : TransformOp
+
+    // TODO: add skew with matrix
+}
+
 enum class IrPathFillType {
     EvenOdd,
     NonZero,
@@ -54,14 +84,6 @@ enum class IrStrokeLineJoin {
     Miter,
     Round,
     Bevel,
-}
-
-enum class IrTransformType {
-    Rotate,
-    ScaleX,
-    ScaleY,
-    TranslateX,
-    TranslateY,
 }
 
 sealed interface IrFill {
