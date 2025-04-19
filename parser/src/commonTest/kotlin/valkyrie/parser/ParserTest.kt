@@ -39,102 +39,115 @@ class ParserTest {
         </svg>
     """.trimIndent()
 
-    val dummyXml = """
-        <vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
-            android:viewportWidth="24"
-            android:viewportHeight="24"
-            android:width="24dp"
-            android:height="24dp">
-            <path
-                android:pathData="M0 24L12.039062 11.960938L24 24ZM0 24">
-                <aapt:attr
-                    name="android:fillColor">
-                    <gradient
-                        android:startX="6.38376"
-                        android:startY="29.60528"
-                        android:endX="17.72273"
-                        android:endY="18.26717"
-                        android:tileMode="clamp">
-                        <item
-                            android:color="#0095D5"
-                            android:offset="0.09677" />
-                        <item
-                            android:color="#238AD9"
-                            android:offset="0.3007" />
-                        <item
-                            android:color="#557BDE"
-                            android:offset="0.6211" />
-                        <item
-                            android:color="#7472E2"
-                            android:offset="0.8643" />
-                        <item
-                            android:color="#806EE3"
-                            android:offset="1" />
-                    </gradient>
-                </aapt:attr>
-            </path>
-            <path
-                android:pathData="M0 0L12.039062 0L0 13ZM0 0">
-                <aapt:attr
-                    name="android:fillColor">
-                    <gradient
-                        android:startX="1.683554"
-                        android:startY="4.823637"
-                        android:endX="8.268717"
-                        android:endY="-1.761994"
-                        android:tileMode="clamp">
-                        <item
-                            android:color="#0095D5"
-                            android:offset="0.1183" />
-                        <item
-                            android:color="#3C83DC"
-                            android:offset="0.4178" />
-                        <item
-                            android:color="#6D74E1"
-                            android:offset="0.6962" />
-                        <item
-                            android:color="#806EE3"
-                            android:offset="0.8333" />
-                    </gradient>
-                </aapt:attr>
-            </path>
-            <path
-                android:pathData="M12.039062 0L0 12.679688L0 24L24 0ZM12.039062 0">
-                <aapt:attr
-                    name="android:fillColor">
-                    <gradient
-                        android:startX="-4.040688"
-                        android:startY="22.06553"
-                        android:endX="18.29261"
-                        android:endY="-0.2677608"
-                        android:tileMode="clamp">
-                        <item
-                            android:color="#C757BC"
-                            android:offset="0.1075" />
-                        <item
-                            android:color="#D0609A"
-                            android:offset="0.2138" />
-                        <item
-                            android:color="#E1725C"
-                            android:offset="0.4254" />
-                        <item
-                            android:color="#EE7E2F"
-                            android:offset="0.6048" />
-                        <item
-                            android:color="#F58613"
-                            android:offset="0.743" />
-                        <item
-                            android:color="#F88909"
-                            android:offset="0.8232" />
-                    </gradient>
-                </aapt:attr>
-            </path>
-        </vector>
+    val svg2composeLogo = """
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+        <svg
+           width="66.68364mm"
+           height="66.683655mm"
+           viewBox="0 0 66.68364 66.683655"
+           version="1.1"
+           id="svg1"
+           xml:space="preserve"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg"><defs
+             id="defs1" /><g
+             id="layer1"
+             transform="translate(-127.17607,-58.618422)"><g
+               id="g14"><rect
+                 style="fill:#222222;fill-opacity:1;stroke-width:0.108967"
+                 id="rect1-8"
+                 width="66.683647"
+                 height="66.683647"
+                 x="127.17607"
+                 y="58.618423" /><g
+                 id="g2"><g
+                   id="g3"
+                   style="fill:#ffb13b;fill-opacity:1"><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8"
+                     cx="160.60208"
+                     cy="115.62291"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-2"
+                     cx="180.44583"
+                     cy="104.24583"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-6"
+                     cx="180.44583"
+                     cy="81.227081"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-1"
+                     cx="160.60208"
+                     cy="69.585411"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-9"
+                     cx="160.60208"
+                     cy="79.90416"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-23"
+                     cx="149.48958"
+                     cy="86.254158"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-3"
+                     cx="149.48958"
+                     cy="99.218742"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-77"
+                     cx="160.60208"
+                     cy="105.56875"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-8"
+                     cx="171.71458"
+                     cy="98.954163"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-86"
+                     cx="171.71458"
+                     cy="86.254158"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-65"
+                     cx="140.49374"
+                     cy="81.227081"
+                     r="2.1166666" /><circle
+                     style="fill:#ffb13b;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     id="path8-7"
+                     cx="140.49374"
+                     cy="104.24583"
+                     r="2.1166666" /></g><g
+                   id="g4"
+                   style="stroke:#ffb13b;stroke-opacity:1"><path
+                     id="path7"
+                     style="fill:none;stroke:#ffb13b;stroke-width:1.32292;stroke-opacity:1"
+                     d="m 180.4547,81.14817 v 23.02106 l -19.93682,11.51053 -19.93682,-11.51053 V 81.148171 l 19.93682,-11.510529 z" /><path
+                     id="path7-2"
+                     style="fill:none;stroke:#ffb13b;stroke-width:2.36234;stroke-dasharray:none;stroke-opacity:1"
+                     transform="matrix(0.56000305,0,0,0.56000305,70.627378,40.769545)"
+                     d="m 180.4547,81.14817 v 23.02106 l -19.93682,11.51053 -19.93682,-11.51053 V 81.148171 l 19.93682,-11.510529 z" /><path
+                     style="fill:#ffb13b;fill-opacity:1;stroke:#ffb13b;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     d="m 160.51788,105.55056 v 10.1292"
+                     id="path9" /><path
+                     style="fill:#ffb13b;fill-opacity:1;stroke:#ffb13b;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     d="m 171.68256,86.212766 8.77214,-5.064598"
+                     id="path10" /><path
+                     style="fill:#ffb13b;fill-opacity:1;stroke:#ffb13b;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+                     d="M 149.3532,86.212766 140.58106,81.14817"
+                     id="path11" /></g></g></g></g></svg>
     """.trimIndent()
 
     @Test
     fun shouldParseSvgToIrImageVector() {
-        val ir = SvgStringParser.parse(dummySvg)
+        val ir = SvgStringParser.parse(svg2composeLogo)
         ir.nodes.forEach(::println)
     }
 

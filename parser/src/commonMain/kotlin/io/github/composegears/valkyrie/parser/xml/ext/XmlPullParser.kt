@@ -2,10 +2,9 @@ package io.github.composegears.valkyrie.parser.xml.ext
 
 import io.github.xmlpullkmp.XmlPullParser
 
-
-internal fun XmlPullParser.dpValueAsFloat(name: String): Float? {
+internal fun XmlPullParser.unitValueAsFloat(name: String): Float? {
     return getAttribute(name)
-        ?.removeSuffix("dp")
+        ?.replace(Regex("[a-zA-Z%]+$"), "")
         ?.toFloatOrNull()
 }
 

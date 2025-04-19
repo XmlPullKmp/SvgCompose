@@ -40,6 +40,16 @@ internal fun XmlPullParser.valueAsIrColor(name: String): IrColor? {
     return getAttribute(name)?.let { IrColor(it) }
 }
 
+internal fun XmlPullParser.valueAsStyle(): Map<String, String> {
+    val style = getAttribute(STYLE).orEmpty()
+    return style.split(";")
+        .mapNotNull { record -> record
+            .split(":")
+            .takeIf { elements -> elements.size == 2 }
+        }
+        .associate { (key, value) -> key.trim() to value.trim() }
+}
+
 // SVG Path Attribute Names
 private const val PATH_DATA = "d"
 

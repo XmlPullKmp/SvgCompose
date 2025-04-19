@@ -47,8 +47,8 @@ private fun parseSVGAttributes(parser: XmlPullParser): VectorAttributes {
     } ?: Pair(0f, 0f)
 
     return VectorAttributes(
-        width = parser.dpValueAsFloat(WIDTH) ?: 0f,
-        height = parser.dpValueAsFloat(HEIGHT) ?: 0f,
+        width = parser.unitValueAsFloat(WIDTH) ?: 0f,
+        height = parser.unitValueAsFloat(HEIGHT) ?: 0f,
         viewportWidth = viewportWidth,
         viewportHeight = viewportHeight,
     )
@@ -97,18 +97,20 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
 }
 
 private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
-    val fillColor = parser.valueAsIrColor(FILL)
-    val strokeColor = parser.valueAsIrColor(STROKE)
+    val style = parser.valueAsStyle()
+
+    val fillColor = style[FILL]?.let { IrColor(it) } ?: parser.valueAsIrColor(FILL)
+    val strokeColor = style[STROKE]?.let { IrColor(it) } ?: parser.valueAsIrColor(STROKE)
 
     return IrVectorNode.IrPath(
         name = parser.valueAsString(ID).orEmpty(),
         fill = when {
             fillColor != null && !fillColor.isTransparent() -> IrFill.Color(fillColor)
-            else -> null
+            else -> IrFill.Color(IrColor("#000000")) // TODO: handle gradients
         },
         stroke = when {
             strokeColor != null && !strokeColor.isTransparent() -> IrStroke.Color(strokeColor)
-            else -> null
+            else -> IrStroke.Color(IrColor("#000000")) // TODO: handle gradients
         },
         strokeAlpha = parser.valueAsFloat(STROKE_OPACITY) ?: 1f,
         fillAlpha = parser.valueAsFloat(FILL_OPACITY) ?: 1f,
