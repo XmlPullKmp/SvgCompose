@@ -8,6 +8,7 @@ import io.github.composegears.valkyrie.parser.util.ext.decomposeToVectorTransfor
 import io.github.composegears.valkyrie.parser.util.ext.preRotate
 import io.github.composegears.valkyrie.parser.util.ext.preScale
 import io.github.composegears.valkyrie.parser.util.ext.preTranslate
+import io.github.composegears.valkyrie.parser.util.ext.times
 import io.github.composegears.valkyrie.parser.xml.ext.*
 import io.github.xmlpullkmp.XmlPullParser
 import io.github.xmlpullkmp.XmlPullParserKmp
@@ -71,6 +72,7 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
             XmlPullParser.START_TAG -> {
                 when (parser.getName()) {
                     PATH -> {
+                        // TODO: handle path specific transforms (by wrapping in group)
                         val path = parsePath(parser)
                         groupStack.lastOrNull()?.children?.add(path) ?: nodes.add(path)
                     }
@@ -110,6 +112,9 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
         if (it == NONE) return@let null
         IrColor(it)
     } ?: parser.valueAsIrColor(STROKE)
+
+    // TODO: handle more style parameters
+    // TODO: handle path specific transforms
 
     return IrVectorNode.IrPath(
         name = parser.valueAsString(ID).orEmpty(),
@@ -159,7 +164,7 @@ private fun parseClipPath(parser: XmlPullParser): Pair<String, MutableList<IrVec
     val clipPathId = parser.valueAsString(ID) ?: return Pair("", mutableListOf())
     val clipNodes = mutableListOf<IrVectorNode>()
 
-    // TODO: clipPath flattening ?
+    // TODO: clipPath (path merging) flattening ?
 
     return Pair(clipPathId, clipNodes)
 }
@@ -203,6 +208,15 @@ private fun parseTransform(transformString: String): VectorTransform {
             is Translate -> matrix.preTranslate(op.tx, op.ty)
             is Rotate -> matrix.preRotate(op.theta, op.cx, op.cy)
             is Scale -> matrix.preScale(op.sx, op.sy)
+            is Matrix -> matrix.times(Matrix3x3(
+                a = op.a,
+                b = op.b,
+                c = op.c,
+                d = op.d,
+                e = op.e,
+                f = op.f
+            ))
+            // TODO: handle skew?
         }
     }
 
@@ -215,6 +229,7 @@ private fun parseTransform(transformString: String): VectorTransform {
     }
 }
 
+// TODO: Handle matrix transform
 private fun parseTransformOps(transformString: String): List<TransformOp> {
     val regex = Regex("""(\w+)\(([^)]*)\)""")
     return regex.findAll(transformString.replace(",", " ")).map { match ->
@@ -227,6 +242,10 @@ private fun parseTransformOps(transformString: String): List<TransformOp> {
             }
 
             SCALE -> Scale(values[0], values.getOrElse(1) { values[0] })
+            MATRIX -> {
+                if (values.size != 6) throw IllegalArgumentException("Matrix transform requires 6 values")
+                Matrix(values[0], values[1], values[2], values[3], values[4], values[5])
+            }
             else -> throw IllegalArgumentException("Unsupported transform: ${match.groupValues[1]}")
         }
     }.toList()
@@ -317,6 +336,7 @@ private const val VIEW_BOX = "viewBox"
 private const val TRANSLATE = "translate"
 private const val ROTATE = "rotate"
 private const val SCALE = "scale"
+private const val MATRIX = "matrix"
 
 // SVG Path Properties Names
 private const val FILL = "fill"

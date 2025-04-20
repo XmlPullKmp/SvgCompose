@@ -66,7 +66,16 @@ internal sealed interface TransformOp {
         val sy: Float,
     ) : TransformOp
 
-    // TODO: add skew with matrix
+    data class Matrix(
+        val a: Float,
+        val b: Float,
+        val c: Float,
+        val d: Float,
+        val e: Float,
+        val f: Float,
+    ) : TransformOp
+
+    // TODO: handle skewX and skewY
 }
 
 enum class IrFillType {
