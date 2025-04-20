@@ -11,19 +11,24 @@ fun IrImageVector.iconColors(): List<IrColor> {
 
     nodes.onEach { node ->
         when (node) {
-            is IrVectorNode.IrGroup -> {
-                node.paths.forEach {
-                    visitPath(
-                        node = it,
-                        colors = colors,
-                    )
-                }
-            }
+            is IrVectorNode.IrGroup -> visitGroup(node, colors)
             is IrVectorNode.IrPath  -> visitPath(node, colors)
         }
     }
 
     return colors
+}
+
+private fun visitGroup(
+    node: IrVectorNode.IrGroup,
+    colors: MutableList<IrColor>,
+) {
+    node.children.forEach {
+        when (it) {
+            is IrVectorNode.IrGroup -> visitGroup(it, colors) // TODO: Check recursive call
+            is IrVectorNode.IrPath  -> visitPath(it, colors)
+        }
+    }
 }
 
 private fun visitPath(

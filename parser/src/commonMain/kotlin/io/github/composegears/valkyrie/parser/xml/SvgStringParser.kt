@@ -58,7 +58,7 @@ private fun parseSVGAttributes(parser: XmlPullParser): VectorAttributes {
 
 private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
     val nodes = mutableListOf<IrVectorNode>()
-    var currentGroup: IrVectorNode.IrGroup? = null
+    val groupStack = ArrayDeque<IrVectorNode.IrGroup>()
 
     // TODO: Split IrVectorNode (separate group, add shapes)
     // TODO: ClipPaths stored/accessible as MutableList<IrPathNode>
@@ -72,22 +72,23 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
                 when (parser.getName()) {
                     PATH -> {
                         val path = parsePath(parser)
-                        if (currentGroup != null) {
-                            currentGroup.paths.add(path)
-                        } else {
-                            nodes.add(path)
-                        }
+                        groupStack.lastOrNull()?.children?.add(path) ?: nodes.add(path)
                     }
 
                     GROUP -> {
                         val group = parseGroup(parser, clipPaths)
-                        currentGroup = group
-                        nodes.add(group)
+                        groupStack.lastOrNull()?.children?.add(group) ?: nodes.add(group)
+                        groupStack.addLast(group)
                     }
 
                     CLIP_PATH -> {
                         clipPaths += parseClipPath(parser)
                     }
+                }
+            }
+            XmlPullParser.END_TAG -> {
+                if (parser.getName() == GROUP) {
+                    groupStack.removeLastOrNull()
                 }
             }
         }
@@ -106,11 +107,11 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
         name = parser.valueAsString(ID).orEmpty(),
         fill = when {
             fillColor != null && !fillColor.isTransparent() -> IrFill.Color(fillColor)
-            else -> IrFill.Color(IrColor("#000000")) // TODO: handle gradients
+            else -> null // TODO: handle gradients
         },
         stroke = when {
             strokeColor != null && !strokeColor.isTransparent() -> IrStroke.Color(strokeColor)
-            else -> IrStroke.Color(IrColor("#000000")) // TODO: handle gradients
+            else -> null // TODO: handle gradients
         },
         strokeAlpha = parser.valueAsFloat(STROKE_OPACITY) ?: 1f,
         fillAlpha = parser.valueAsFloat(FILL_OPACITY) ?: 1f,
@@ -119,7 +120,7 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
         strokeLineJoin = parser.valueAsStrokeLineJoin(),
         strokeLineMiter = parser.valueAsFloat(STROKE_MITER_LIMIT) ?: 4f,
         fillType = parser.valueAsFillType(),
-        paths = parser.valueAsPathData(),
+        pathNodes = parser.valueAsPathData(),
     )
 }
 
@@ -141,7 +142,7 @@ private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList
         scaleY = vectorTransform.scaleY,
         translationX = vectorTransform.translateX,
         translationY = vectorTransform.translateY,
-        paths = mutableListOf(),
+        children = mutableListOf(),
         clipPathData = mutableListOf(),
     )
 }

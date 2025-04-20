@@ -70,8 +70,11 @@ private fun ImageVector.Builder.addGroup(group: IrGroup) {
         translationY = group.translationY,
         clipPathData = group.clipPathData.buildClipPath(),
     ) {
-        group.paths.forEach {
-            addPath(it)
+        group.children.forEach {
+            when (it) {
+                is IrGroup -> addGroup(it) // TODO: Check recursive call
+                is IrPath  -> addPath(it)
+            }
         }
     }
 }
@@ -89,7 +92,7 @@ private fun ImageVector.Builder.addPath(path: IrPath) {
         strokeLineMiter = path.strokeLineMiter,
         pathFillType = path.fillType.toFillType(),
         pathBuilder = {
-            buildPath(path.paths)
+            buildPath(path.pathNodes)
         },
     )
 }
