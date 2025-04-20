@@ -100,8 +100,16 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
 private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
     val style = parser.valueAsStyle()
 
-    val fillColor = style[FILL]?.let { IrColor(it) } ?: parser.valueAsIrColor(FILL)
-    val strokeColor = style[STROKE]?.let { IrColor(it) } ?: parser.valueAsIrColor(STROKE)
+    // TODO: temporary fix for stroke/fill
+    // TODO: handle gradients (url)
+    val fillColor = style[FILL]?.let {
+        if (it == NONE) return@let null
+        IrColor(it)
+    } ?: parser.valueAsIrColor(FILL)
+    val strokeColor = style[STROKE]?.let {
+        if (it == NONE) return@let null
+        IrColor(it)
+    } ?: parser.valueAsIrColor(STROKE)
 
     return IrVectorNode.IrPath(
         name = parser.valueAsString(ID).orEmpty(),
@@ -287,6 +295,9 @@ private fun parseTransformOps(transformString: String): List<TransformOp> {
 //        else -> {}
 //    }
 //}
+
+// SVG none value
+private const val NONE = "none"
 
 // SVG tag names
 private const val CLIP_PATH = "clip-path"
