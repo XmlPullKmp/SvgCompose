@@ -34,7 +34,7 @@ sealed interface IrVectorNode {
         val strokeLineCap: IrStrokeLineCap = IrStrokeLineCap.Butt,
         val strokeLineJoin: IrStrokeLineJoin = IrStrokeLineJoin.Miter,
         val strokeLineMiter: Float = 4f,
-        val pathFillType: IrPathFillType = IrPathFillType.NonZero,
+        val fillType: IrFillType = IrFillType.NonZero,
         val paths: List<IrPathNode>,
     ) : IrVectorNode
 }
@@ -69,7 +69,7 @@ internal sealed interface TransformOp {
     // TODO: add skew with matrix
 }
 
-enum class IrPathFillType {
+enum class IrFillType {
     EvenOdd,
     NonZero,
 }

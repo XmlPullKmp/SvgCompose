@@ -118,7 +118,7 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
         strokeLineCap = parser.valueAsStrokeCap(),
         strokeLineJoin = parser.valueAsStrokeLineJoin(),
         strokeLineMiter = parser.valueAsFloat(STROKE_MITER_LIMIT) ?: 4f,
-        pathFillType = parser.valueAsFillType(),
+        fillType = parser.valueAsFillType(),
         paths = parser.valueAsPathData(),
     )
 }
@@ -222,20 +222,6 @@ private fun parseTransformOps(transformString: String): List<TransformOp> {
         }
     }.toList()
 }
-
-//private fun detectPivot(ops: List<TransformOp>): Pair<Float, Float>? {
-//    if (ops.size < 3) return null
-//    val (preTranslate, _, postTranslate) = ops.take(3)
-//
-//    return when {
-//        preTranslate is Translate &&
-//                postTranslate is Translate &&
-//                preTranslate.tx == -postTranslate.tx &&
-//                preTranslate.ty == -postTranslate.ty -> Pair(preTranslate.tx, preTranslate.ty)
-//
-//        else -> null
-//    }
-//}
 
 // TODO: Handle gradients
 

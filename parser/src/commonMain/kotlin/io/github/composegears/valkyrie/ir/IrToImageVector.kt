@@ -87,7 +87,7 @@ private fun ImageVector.Builder.addPath(path: IrPath) {
         strokeLineCap = path.strokeLineCap.toLineCap(),
         strokeLineJoin = path.strokeLineJoin.toStrokeJoin(),
         strokeLineMiter = path.strokeLineMiter,
-        pathFillType = path.pathFillType.toFillType(),
+        pathFillType = path.fillType.toFillType(),
         pathBuilder = {
             buildPath(path.paths)
         },
@@ -228,9 +228,9 @@ private fun IrStrokeLineJoin.toStrokeJoin(): StrokeJoin {
     }
 }
 
-private fun IrPathFillType.toFillType(): PathFillType {
+private fun IrFillType.toFillType(): PathFillType {
     return when (this) {
-        IrPathFillType.EvenOdd -> PathFillType.EvenOdd
-        IrPathFillType.NonZero -> PathFillType.NonZero
+        IrFillType.EvenOdd -> PathFillType.EvenOdd
+        IrFillType.NonZero -> PathFillType.NonZero
     }
 }

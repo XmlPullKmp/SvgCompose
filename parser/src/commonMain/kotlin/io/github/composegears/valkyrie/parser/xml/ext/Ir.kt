@@ -1,7 +1,7 @@
 package io.github.composegears.valkyrie.parser.xml.ext
 
 import io.github.composegears.valkyrie.ir.IrColor
-import io.github.composegears.valkyrie.ir.IrPathFillType
+import io.github.composegears.valkyrie.ir.IrFillType
 import io.github.composegears.valkyrie.ir.IrPathNode
 import io.github.composegears.valkyrie.ir.IrStrokeLineCap
 import io.github.composegears.valkyrie.ir.IrStrokeLineJoin
@@ -12,11 +12,11 @@ internal fun XmlPullParser.valueAsPathData(): List<IrPathNode> {
     return PathParser.parsePathString(getAttribute(PATH_DATA).orEmpty())
 }
 
-internal fun XmlPullParser.valueAsFillType(): IrPathFillType {
+internal fun XmlPullParser.valueAsFillType(): IrFillType {
     return when (getAttribute(FILL_TYPE)) {
-        EVENODD -> IrPathFillType.EvenOdd
-        NONZERO -> IrPathFillType.NonZero
-        else    -> IrPathFillType.NonZero
+        EVENODD -> IrFillType.EvenOdd
+        NONZERO -> IrFillType.NonZero
+        else    -> IrFillType.NonZero
     }
 }
 
