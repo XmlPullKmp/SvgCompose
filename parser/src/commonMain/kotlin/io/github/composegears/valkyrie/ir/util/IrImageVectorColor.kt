@@ -6,6 +6,7 @@ import io.github.composegears.valkyrie.ir.IrImageVector
 import io.github.composegears.valkyrie.ir.IrStroke
 import io.github.composegears.valkyrie.ir.IrVectorNode
 
+// Check if needed (gradients)
 fun IrImageVector.iconColors(): List<IrColor> {
     val colors = mutableListOf<IrColor>()
 
@@ -13,6 +14,7 @@ fun IrImageVector.iconColors(): List<IrColor> {
         when (node) {
             is IrVectorNode.IrGroup -> visitGroup(node, colors)
             is IrVectorNode.IrPath  -> visitPath(node, colors)
+            else -> {} //CHECK!!!!
         }
     }
 
@@ -25,8 +27,9 @@ private fun visitGroup(
 ) {
     node.children.forEach {
         when (it) {
-            is IrVectorNode.IrGroup -> visitGroup(it, colors) // TODO: Check recursive call
+            is IrVectorNode.IrGroup -> visitGroup(it, colors) // CHECK: recursive call
             is IrVectorNode.IrPath  -> visitPath(it, colors)
+            is IrVectorNode.IrShape -> visitPath(it.run { toPath() }, colors)
         }
     }
 }

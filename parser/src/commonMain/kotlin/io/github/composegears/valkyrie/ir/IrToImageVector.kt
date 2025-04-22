@@ -36,6 +36,7 @@ import io.github.composegears.valkyrie.ir.IrPathNode.RelativeVerticalTo
 import io.github.composegears.valkyrie.ir.IrPathNode.VerticalTo
 import io.github.composegears.valkyrie.ir.IrVectorNode.IrGroup
 import io.github.composegears.valkyrie.ir.IrVectorNode.IrPath
+import io.github.composegears.valkyrie.ir.IrVectorNode.IrShape
 
 fun IrImageVector.toComposeImageVector(
     defaultWidth: Dp = this.defaultWidth.dp,
@@ -53,6 +54,7 @@ fun IrImageVector.toComposeImageVector(
             when (it) {
                 is IrGroup -> addGroup(it)
                 is IrPath  -> addPath(it)
+                is IrShape -> addPath(it.run { toPath() })
             }
         }
     }.build()
@@ -72,8 +74,9 @@ private fun ImageVector.Builder.addGroup(group: IrGroup) {
     ) {
         group.children.forEach {
             when (it) {
-                is IrGroup -> addGroup(it) // TODO: Check recursive call
+                is IrGroup -> addGroup(it) // CHECK: recursive call
                 is IrPath  -> addPath(it)
+                is IrShape -> addPath(it.run { toPath() })
             }
         }
     }
@@ -81,7 +84,7 @@ private fun ImageVector.Builder.addGroup(group: IrGroup) {
 
 private fun ImageVector.Builder.addPath(path: IrPath) {
     path(
-        name = path.name,
+        name = path.name ?: "",
         fill = path.fill.toFill(),
         fillAlpha = path.fillAlpha,
         stroke = path.stroke.toBrush(),

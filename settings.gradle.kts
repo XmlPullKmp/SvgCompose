@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SvgCompose"
 
+// TODO: split into multiple modules
 include(":parser")

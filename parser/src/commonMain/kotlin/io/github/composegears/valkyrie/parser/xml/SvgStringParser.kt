@@ -61,7 +61,8 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
     val nodes = mutableListOf<IrVectorNode>()
     val groupStack = ArrayDeque<IrVectorNode.IrGroup>()
 
-    // TODO: Split IrVectorNode (separate group, add shapes)
+    // TODO: Add shapes
+    // TODO: Add gradients
     // TODO: ClipPaths stored/accessible as MutableList<IrPathNode>
     val clipPaths = mutableMapOf<String, MutableList<IrVectorNode>>()
 
@@ -71,18 +72,31 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
         when (parser.getEventType()) {
             XmlPullParser.START_TAG -> {
                 when (parser.getName()) {
+                    // PATH
                     PATH -> {
-                        // TODO: handle path specific transforms (by wrapping in group)
+                        // TODO: handle path specific transforms ([TEMP] by wrapping in group)
                         val path = parsePath(parser)
                         groupStack.lastOrNull()?.children?.add(path) ?: nodes.add(path)
                     }
 
+                    // SHAPES
+                    RECT -> {
+                        val rect = parseRect(parser)
+                        groupStack.lastOrNull()?.children?.add(rect) ?: nodes.add(rect)
+                    }
+                    CIRCLE -> {
+                        val circle = parseCircle(parser)
+                        groupStack.lastOrNull()?.children?.add(circle) ?: nodes.add(circle)
+                    }
+
+                    // GROUPS
                     GROUP -> {
                         val group = parseGroup(parser, clipPaths)
                         groupStack.lastOrNull()?.children?.add(group) ?: nodes.add(group)
                         groupStack.addLast(group)
                     }
 
+                    // DEFS
                     CLIP_PATH -> {
                         clipPaths += parseClipPath(parser)
                     }
@@ -137,7 +151,39 @@ private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
     )
 }
 
+private fun parseRect(parser: XmlPullParser): IrVectorNode.IrShape.IrRect {
+    val x = parser.valueAsFloat("x") ?: 0f
+    val y = parser.valueAsFloat("y") ?: 0f
+    val width = parser.valueAsFloat(WIDTH) ?: 0f
+    val height = parser.valueAsFloat(HEIGHT) ?: 0f
+    val rx = parser.valueAsFloat("rx") ?: 0f
+    val ry = parser.valueAsFloat("ry") ?: 0f
+
+    return IrVectorNode.IrShape.IrRect(
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        rx = rx,
+        ry = ry,
+    )
+}
+
+private fun parseCircle(parser: XmlPullParser): IrVectorNode.IrShape.IrCircle {
+    val cx = parser.valueAsFloat("cx") ?: 0f
+    val cy = parser.valueAsFloat("cy") ?: 0f
+    val r = parser.valueAsFloat("r") ?: 0f
+
+    return IrVectorNode.IrShape.IrCircle(
+        cx = cx,
+        cy = cy,
+        r = r,
+    )
+}
+
 private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList<IrVectorNode>>): IrVectorNode.IrGroup {
+    // TODO: handle group styles
+
     // TODO: clipPath flattening ?
     val clipPathData = parser.valueAsString(CLIP_PATH)?.let { clipUrl ->
         val clipPathId = clipUrl.substringAfter(URL_START).substringBefore(COMMON_END)
@@ -164,7 +210,7 @@ private fun parseClipPath(parser: XmlPullParser): Pair<String, MutableList<IrVec
     val clipPathId = parser.valueAsString(ID) ?: return Pair("", mutableListOf())
     val clipNodes = mutableListOf<IrVectorNode>()
 
-    // TODO: clipPath (path merging) flattening ?
+    // TODO: path union (should be easy after shapeToPath)
 
     return Pair(clipPathId, clipNodes)
 }
@@ -315,13 +361,16 @@ private fun parseTransformOps(transformString: String): List<TransformOp> {
 //    }
 //}
 
-// SVG none value
+// SVG "special" values
+private const val AUTO = "auto"
 private const val NONE = "none"
 
 // SVG tag names
 private const val CLIP_PATH = "clip-path"
 private const val GROUP = "g"
 private const val PATH = "path"
+private const val RECT = "rect"
+private const val CIRCLE = "circle"
 
 // SVG Common Properties names
 private const val ID = "id"

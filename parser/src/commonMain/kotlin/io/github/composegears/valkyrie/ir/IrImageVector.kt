@@ -1,5 +1,8 @@
 package io.github.composegears.valkyrie.ir
 
+import io.github.composegears.valkyrie.ir.util.circleToPath
+import io.github.composegears.valkyrie.ir.util.rectToPath
+
 data class IrImageVector(
     val name: String = "",
     val autoMirror: Boolean = false,
@@ -9,6 +12,32 @@ data class IrImageVector(
     val viewportHeight: Float,
     val nodes: List<IrVectorNode>,
 )
+
+interface IrIdentifiable {
+    val name: String?
+}
+
+interface IrStylizable {
+    val fill: IrFill?
+    val fillAlpha: Float
+    val fillType: IrFillType
+    val stroke: IrStroke?
+    val strokeAlpha: Float
+    val strokeLineWidth: Float
+    val strokeLineCap: IrStrokeLineCap
+    val strokeLineJoin: IrStrokeLineJoin
+    val strokeLineMiter: Float
+}
+
+// CHECK: would be more aligned with IrTransformable
+//interface irStylizableRedone {
+//    val styles: List<StyleOp>?
+//}
+
+// TODO: replace VectorTransform
+interface IrTransformable {
+    val transforms: List<TransformOp>?
+}
 
 sealed interface IrVectorNode {
     data class IrGroup(
@@ -25,20 +54,63 @@ sealed interface IrVectorNode {
     ) : IrVectorNode
 
     data class IrPath(
-        val name: String = "",
-        val fill: IrFill? = null,
-        val fillAlpha: Float = 1f,
-        val stroke: IrStroke? = null,
-        val strokeAlpha: Float = 1f,
-        val strokeLineWidth: Float = 0f,
-        val strokeLineCap: IrStrokeLineCap = IrStrokeLineCap.Butt,
-        val strokeLineJoin: IrStrokeLineJoin = IrStrokeLineJoin.Miter,
-        val strokeLineMiter: Float = 4f,
-        val fillType: IrFillType = IrFillType.NonZero,
+        // IrIdentifiable
+        override val name: String? = "",
+
+        // IrStylizable
+        override val fill: IrFill? = null,
+        override val fillAlpha: Float = 1f,
+        override val fillType: IrFillType = IrFillType.NonZero,
+        override val stroke: IrStroke? = null,
+        override val strokeAlpha: Float = 1f,
+        override val strokeLineWidth: Float = 0f,
+        override val strokeLineCap: IrStrokeLineCap = IrStrokeLineCap.Butt,
+        override val strokeLineJoin: IrStrokeLineJoin = IrStrokeLineJoin.Miter,
+        override val strokeLineMiter: Float = 4f,
+
         val pathNodes: List<IrPathNode>,
-    ) : IrVectorNode
+    ) : IrVectorNode, IrIdentifiable, IrStylizable
+
+    /**
+     * Interface that stores all basic SVG Shapes and exposes common method toPath()
+     */
+    sealed interface IrShape : IrVectorNode, IrIdentifiable {
+        fun IrShape.toPath(): IrPath
+
+        /**
+         * SVG aligned 'rect' shape
+         * @see{https://svgwg.org/svg2-draft/shapes.html#RectElement}
+         */
+        data class IrRect(
+            override val name: String? = null,
+
+            val x: Float = 0f,
+            val y: Float = 0f,
+            val width: Float = 0f,
+            val height: Float = 0f,
+            val rx: Float = 0f,
+            val ry: Float = 0f,
+        ) : IrShape {
+            override fun IrShape.toPath(): IrPath = rectToPath()
+        }
+
+        /**
+         * SVG aligned 'circle' shape
+         * @see{https://svgwg.org/svg2-draft/shapes.html#CircleElement}
+         */
+        data class IrCircle(
+            override val name: String? = null,
+
+            val cx: Float = 0f,
+            val cy: Float = 0f,
+            val r: Float = 0f,
+        ) : IrShape {
+            override fun IrShape.toPath(): IrPath = circleToPath()
+        }
+    }
 }
 
+// FIXME: should be replaced with IrTransformable
 data class VectorTransform(
     var pivotX: Float = 0f,
     var pivotY: Float = 0f,
@@ -49,7 +121,7 @@ data class VectorTransform(
     var translateY: Float = 0f,
 )
 
-internal sealed interface TransformOp {
+sealed interface TransformOp {
     data class Translate(
         val tx: Float,
         val ty: Float,
