@@ -61,10 +61,8 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
     val nodes = mutableListOf<IrVectorNode>()
     val groupStack = ArrayDeque<IrVectorNode.IrGroup>()
 
-    // TODO: Add shapes
-    // TODO: Add gradients
-    // TODO: ClipPaths stored/accessible as MutableList<IrPathNode>
     val clipPaths = mutableMapOf<String, MutableList<IrVectorNode>>()
+    // TODO: Add gradients
 
     parser.next()
 
@@ -74,12 +72,17 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
                 when (parser.getName()) {
                     // PATH
                     PATH -> {
-                        // TODO: handle path specific transforms ([TEMP] by wrapping in group)
                         val path = parsePath(parser)
-                        groupStack.lastOrNull()?.children?.add(path) ?: nodes.add(path)
+                        parser.valueAsString(TRANSFORM)?.let {
+                            val group = wrapAroundTransformGroup(path, it)
+                            groupStack.lastOrNull()?.children?.add(group) ?: nodes.add(group)
+                        } ?: run {
+                            groupStack.lastOrNull()?.children?.add(path) ?: nodes.add(path)
+                        }
                     }
 
                     // SHAPES
+                    // TODO: Add shapes (Ellipse, Line, Polyline, Polygon)
                     RECT -> {
                         val rect = parseRect(parser)
                         groupStack.lastOrNull()?.children?.add(rect) ?: nodes.add(rect)
@@ -113,45 +116,59 @@ private fun parseSVGNodes(parser: XmlPullParser): List<IrVectorNode> {
     return nodes
 }
 
+private fun wrapAroundTransformGroup(
+    path: IrVectorNode.IrPath,
+    transformAttr: String,
+) : IrVectorNode.IrGroup {
+    val transform = parseTransform(transformAttr)
+
+    return IrVectorNode.IrGroup(
+        name = "${path.name}_transformGroup",
+        rotate = transform.rotation,
+        pivotX = transform.pivotX,
+        pivotY = transform.pivotY,
+        scaleX = transform.scaleX,
+        scaleY = transform.scaleY,
+        translationX = transform.translateX,
+        translationY = transform.translateY,
+        clipPathData = mutableListOf(),
+        children = mutableListOf(path),
+    )
+}
+
 private fun parsePath(parser: XmlPullParser): IrVectorNode.IrPath {
     val style = parser.valueAsStyle()
 
     // TODO: temporary fix for stroke/fill
-    // TODO: handle gradients (url)
-    val fillColor = style[FILL]?.let {
-        if (it == NONE) return@let null
-        IrColor(it)
-    } ?: parser.valueAsIrColor(FILL)
-    val strokeColor = style[STROKE]?.let {
-        if (it == NONE) return@let null
-        IrColor(it)
-    } ?: parser.valueAsIrColor(STROKE)
-
-    // TODO: handle more style parameters
-    // TODO: handle path specific transforms
+    // TODO: handle gradients
+    val fill = parseFilled(style, parser)
+    val stroke = parseStroked(style, parser)
 
     return IrVectorNode.IrPath(
         name = parser.valueAsString(ID).orEmpty(),
-        fill = when {
-            fillColor != null && !fillColor.isTransparent() -> IrFill.Color(fillColor)
-            else -> null // TODO: handle gradients
-        },
-        stroke = when {
-            strokeColor != null && !strokeColor.isTransparent() -> IrStroke.Color(strokeColor)
-            else -> null // TODO: handle gradients
-        },
-        strokeAlpha = parser.valueAsFloat(STROKE_OPACITY) ?: 1f,
-        fillAlpha = parser.valueAsFloat(FILL_OPACITY) ?: 1f,
-        strokeLineWidth = parser.valueAsFloat(STROKE_WIDTH) ?: 0f,
-        strokeLineCap = parser.valueAsStrokeCap(),
-        strokeLineJoin = parser.valueAsStrokeLineJoin(),
-        strokeLineMiter = parser.valueAsFloat(STROKE_MITER_LIMIT) ?: 4f,
-        fillType = parser.valueAsFillType(),
+
+        fill = fill.fill,
+        fillType = fill.fillType,
+        fillOpacity = fill.fillOpacity,
+
+        stroke = stroke.stroke,
+        strokeOpacity = stroke.strokeOpacity,
+        strokeWidth = stroke.strokeWidth,
+        strokeLineCap = stroke.strokeLineCap,
+        strokeLineJoin = stroke.strokeLineJoin,
+        strokeMiterLimit = stroke.strokeMiterLimit,
+
         pathNodes = parser.valueAsPathData(),
     )
 }
 
+// TODO: handle "auto" value
 private fun parseRect(parser: XmlPullParser): IrVectorNode.IrShape.IrRect {
+    val style = parser.valueAsStyle()
+
+    val fill = parseFilled(style, parser)
+    val stroke = parseStroked(style, parser)
+
     val x = parser.valueAsFloat("x") ?: 0f
     val y = parser.valueAsFloat("y") ?: 0f
     val width = parser.valueAsFloat(WIDTH) ?: 0f
@@ -160,6 +177,19 @@ private fun parseRect(parser: XmlPullParser): IrVectorNode.IrShape.IrRect {
     val ry = parser.valueAsFloat("ry") ?: 0f
 
     return IrVectorNode.IrShape.IrRect(
+        name = parser.valueAsString(ID).orEmpty(),
+
+        fill = fill.fill,
+        fillType = fill.fillType,
+        fillOpacity = fill.fillOpacity,
+
+        stroke = stroke.stroke,
+        strokeOpacity = stroke.strokeOpacity,
+        strokeWidth = stroke.strokeWidth,
+        strokeLineCap = stroke.strokeLineCap,
+        strokeLineJoin = stroke.strokeLineJoin,
+        strokeMiterLimit = stroke.strokeMiterLimit,
+
         x = x,
         y = y,
         width = width,
@@ -169,22 +199,87 @@ private fun parseRect(parser: XmlPullParser): IrVectorNode.IrShape.IrRect {
     )
 }
 
+// TODO: handle "auto" value
 private fun parseCircle(parser: XmlPullParser): IrVectorNode.IrShape.IrCircle {
+    val style = parser.valueAsStyle()
+
+    val fill = parseFilled(style, parser)
+    val stroke = parseStroked(style, parser)
+
     val cx = parser.valueAsFloat("cx") ?: 0f
     val cy = parser.valueAsFloat("cy") ?: 0f
     val r = parser.valueAsFloat("r") ?: 0f
 
     return IrVectorNode.IrShape.IrCircle(
+        name = parser.valueAsString(ID).orEmpty(),
+
+        fill = fill.fill,
+        fillType = fill.fillType,
+        fillOpacity = fill.fillOpacity,
+
+        stroke = stroke.stroke,
+        strokeOpacity = stroke.strokeOpacity,
+        strokeWidth = stroke.strokeWidth,
+        strokeLineCap = stroke.strokeLineCap,
+        strokeLineJoin = stroke.strokeLineJoin,
+        strokeMiterLimit = stroke.strokeMiterLimit,
+
         cx = cx,
         cy = cy,
         r = r,
     )
 }
 
-private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList<IrVectorNode>>): IrVectorNode.IrGroup {
-    // TODO: handle group styles
+private fun parseFilled(
+    style: Map<String, String>,
+    parser: XmlPullParser,
+) : IrFilled {
+    val fillColor = style[FILL]?.let {
+        if (it == NONE) return@let null
+        IrColor(it)
+    } ?: parser.valueAsIrColor(FILL)
+    val fillType = style[FILL]?.let { stringAsFillType(it) } ?: parser.valueAsFillType()
+    val fillOpacity = style[FILL_OPACITY]?.toFloatOrNull() ?: parser.valueAsFloat(FILL_OPACITY) ?: 1f
 
-    // TODO: clipPath flattening ?
+    return object : IrFilled {
+        override val fill: IrFill? = when {
+            fillColor != null && !fillColor.isTransparent() -> IrFill.Color(fillColor)
+            else -> null // TODO: handle gradients
+        }
+        override val fillType: IrFillType = fillType
+        override val fillOpacity: Float = fillOpacity
+    }
+}
+
+private fun parseStroked(
+    style: Map<String, String>,
+    parser: XmlPullParser,
+) : IrStroked {
+    val strokeColor = style[STROKE]?.let {
+        if (it == NONE) return@let null
+        IrColor(it)
+    } ?: parser.valueAsIrColor(STROKE)
+    val strokeOpacity = style[STROKE_OPACITY]?.toFloatOrNull() ?: parser.valueAsFloat(STROKE_OPACITY) ?: 1f
+    val strokeWidth = style[STROKE_WIDTH]?.toFloatOrNull() ?: parser.valueAsFloat(STROKE_WIDTH) ?: 0f
+    val strokeLineCap = style[STROKE]?.let { stringAsStrokeCap(it) } ?: parser.valueAsStrokeCap()
+    val strokeLineJoin = style[STROKE]?.let { stringAsStrokeLineJoin(it) } ?: parser.valueAsStrokeLineJoin()
+    val strokeMiterLimit = style[STROKE_MITER_LIMIT]?.toFloatOrNull() ?: parser.valueAsFloat(STROKE_MITER_LIMIT) ?: 4f
+
+    return object : IrStroked {
+        override val stroke: IrStroke? = when {
+            strokeColor != null && !strokeColor.isTransparent() -> IrStroke.Color(strokeColor)
+            else -> null // TODO: handle gradients
+        }
+        override val strokeOpacity: Float = strokeOpacity
+        override val strokeWidth: Float = strokeWidth
+        override val strokeLineCap: IrStrokeLineCap = strokeLineCap
+        override val strokeLineJoin: IrStrokeLineJoin = strokeLineJoin
+        override val strokeMiterLimit: Float = strokeMiterLimit
+    }
+}
+
+// TODO: handle group styles
+private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList<IrVectorNode>>): IrVectorNode.IrGroup {
     val clipPathData = parser.valueAsString(CLIP_PATH)?.let { clipUrl ->
         val clipPathId = clipUrl.substringAfter(URL_START).substringBefore(COMMON_END)
         clipPaths[clipPathId] ?: mutableListOf()
@@ -206,6 +301,7 @@ private fun parseGroup(parser: XmlPullParser, clipPaths: Map<String, MutableList
     )
 }
 
+// TODO: handle direct clipPath (not referenced)
 private fun parseClipPath(parser: XmlPullParser): Pair<String, MutableList<IrVectorNode>> {
     val clipPathId = parser.valueAsString(ID) ?: return Pair("", mutableListOf())
     val clipNodes = mutableListOf<IrVectorNode>()
@@ -275,7 +371,6 @@ private fun parseTransform(transformString: String): VectorTransform {
     }
 }
 
-// TODO: Handle matrix transform
 private fun parseTransformOps(transformString: String): List<TransformOp> {
     val regex = Regex("""(\w+)\(([^)]*)\)""")
     return regex.findAll(transformString.replace(",", " ")).map { match ->
@@ -347,7 +442,6 @@ private fun parseTransformOps(transformString: String): List<TransformOp> {
 //    }
 //}
 
-// TODO: Handle gradients
 //private fun handleItem(parser: XmlPullParser, currentGroup: IrVectorNode.IrGroup?, nodes: MutableList<IrVectorNode>) {
 //    val offset = parser.valueAsFloat(OFFSET) ?: 0f
 //    val color = parser.valueAsIrColor(COLOR) ?: return
@@ -396,7 +490,7 @@ private const val STROKE_OPACITY = "stroke-opacity"
 private const val STROKE_WIDTH = "stroke-width"
 private const val STROKE_MITER_LIMIT = "stroke-miterlimit"
 
-// SVG Functions // TODO: Review
+// SVG Functions // TODO: Replace
 private const val URL_START = "url(#"
 private const val COMMON_END = ")"
 

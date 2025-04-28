@@ -12,28 +12,34 @@ internal fun XmlPullParser.valueAsPathData(): List<IrPathNode> {
     return PathParser.parsePathString(getAttribute(PATH_DATA).orEmpty())
 }
 
-internal fun XmlPullParser.valueAsFillType(): IrFillType {
-    return when (getAttribute(FILL_TYPE)) {
+internal fun XmlPullParser.valueAsFillType(): IrFillType = stringAsFillType(getAttribute(FILL_TYPE)) ?: IrFillType.NonZero
+
+internal fun stringAsFillType(value: String?): IrFillType? {
+    return when (value) {
         EVENODD -> IrFillType.EvenOdd
         NONZERO -> IrFillType.NonZero
-        else    -> IrFillType.NonZero
+        else    -> null
     }
 }
 
 internal fun XmlPullParser.valueAsStrokeCap(): IrStrokeLineCap {
     val value = getAttribute(STROKE_LINE_CAP)
+    return stringAsStrokeCap(value) ?: IrStrokeLineCap.Butt
+}
 
+internal fun stringAsStrokeCap(value: String?): IrStrokeLineCap? {
     return IrStrokeLineCap.entries
         .find { it.svgValue.equals(value, ignoreCase = true) }
-        ?: IrStrokeLineCap.Butt
 }
 
 internal fun XmlPullParser.valueAsStrokeLineJoin(): IrStrokeLineJoin {
     val value = getAttribute(STROKE_LINE_JOIN)
+    return stringAsStrokeLineJoin(value) ?: IrStrokeLineJoin.Miter
+}
 
+internal fun stringAsStrokeLineJoin(value: String?): IrStrokeLineJoin? {
     return IrStrokeLineJoin.entries
         .find { it.svgValue.equals(value, ignoreCase = true) }
-        ?: IrStrokeLineJoin.Miter
 }
 
 internal fun XmlPullParser.valueAsIrColor(name: String): IrColor? {

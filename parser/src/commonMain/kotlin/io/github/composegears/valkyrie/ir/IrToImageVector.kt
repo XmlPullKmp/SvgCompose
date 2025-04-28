@@ -86,13 +86,13 @@ private fun ImageVector.Builder.addPath(path: IrPath) {
     path(
         name = path.name ?: "",
         fill = path.fill.toFill(),
-        fillAlpha = path.fillAlpha,
+        fillAlpha = path.fillOpacity,
         stroke = path.stroke.toBrush(),
-        strokeAlpha = path.strokeAlpha,
-        strokeLineWidth = path.strokeLineWidth,
+        strokeAlpha = path.strokeOpacity,
+        strokeLineWidth = path.strokeWidth,
         strokeLineCap = path.strokeLineCap.toLineCap(),
         strokeLineJoin = path.strokeLineJoin.toStrokeJoin(),
-        strokeLineMiter = path.strokeLineMiter,
+        strokeLineMiter = path.strokeMiterLimit,
         pathFillType = path.fillType.toFillType(),
         pathBuilder = {
             buildPath(path.pathNodes)

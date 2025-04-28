@@ -17,27 +17,28 @@ interface IrIdentifiable {
     val name: String?
 }
 
-interface IrStylizable {
+interface IrFilled {
     val fill: IrFill?
-    val fillAlpha: Float
     val fillType: IrFillType
+    val fillOpacity: Float
+}
+
+interface IrStroked {
     val stroke: IrStroke?
-    val strokeAlpha: Float
-    val strokeLineWidth: Float
+    val strokeOpacity: Float
+    val strokeWidth: Float
     val strokeLineCap: IrStrokeLineCap
     val strokeLineJoin: IrStrokeLineJoin
-    val strokeLineMiter: Float
+    val strokeMiterLimit: Float
 }
 
-// CHECK: would be more aligned with IrTransformable
-//interface irStylizableRedone {
-//    val styles: List<StyleOp>?
+//interface IrStylizable {
+//    val styles: List<StyleOp>
 //}
-
-// TODO: replace VectorTransform
-interface IrTransformable {
-    val transforms: List<TransformOp>?
-}
+//
+//interface IrTransformable {
+//    val transforms: List<TransformOp>
+//}
 
 sealed interface IrVectorNode {
     data class IrGroup(
@@ -57,24 +58,26 @@ sealed interface IrVectorNode {
         // IrIdentifiable
         override val name: String? = "",
 
-        // IrStylizable
+        // IrFilled
         override val fill: IrFill? = null,
-        override val fillAlpha: Float = 1f,
         override val fillType: IrFillType = IrFillType.NonZero,
+        override val fillOpacity: Float = 1f,
+
+        // IrStroked
         override val stroke: IrStroke? = null,
-        override val strokeAlpha: Float = 1f,
-        override val strokeLineWidth: Float = 0f,
+        override val strokeOpacity: Float = 1f,
+        override val strokeWidth: Float = 1f,
         override val strokeLineCap: IrStrokeLineCap = IrStrokeLineCap.Butt,
         override val strokeLineJoin: IrStrokeLineJoin = IrStrokeLineJoin.Miter,
-        override val strokeLineMiter: Float = 4f,
+        override val strokeMiterLimit: Float = 4f,
 
         val pathNodes: List<IrPathNode>,
-    ) : IrVectorNode, IrIdentifiable, IrStylizable
+    ) : IrVectorNode, IrIdentifiable, IrFilled, IrStroked
 
     /**
      * Interface that stores all basic SVG Shapes and exposes common method toPath()
      */
-    sealed interface IrShape : IrVectorNode, IrIdentifiable {
+    sealed interface IrShape : IrVectorNode, IrIdentifiable, IrFilled, IrStroked {
         fun IrShape.toPath(): IrPath
 
         /**
@@ -82,7 +85,21 @@ sealed interface IrVectorNode {
          * @see{https://svgwg.org/svg2-draft/shapes.html#RectElement}
          */
         data class IrRect(
+            // IrIdentifiable
             override val name: String? = null,
+
+            // IrFilled
+            override val fill: IrFill?,
+            override val fillType: IrFillType,
+            override val fillOpacity: Float,
+
+            // IrStroked
+            override val stroke: IrStroke?,
+            override val strokeOpacity: Float,
+            override val strokeWidth: Float,
+            override val strokeLineCap: IrStrokeLineCap,
+            override val strokeLineJoin: IrStrokeLineJoin,
+            override val strokeMiterLimit: Float,
 
             val x: Float = 0f,
             val y: Float = 0f,
@@ -99,7 +116,21 @@ sealed interface IrVectorNode {
          * @see{https://svgwg.org/svg2-draft/shapes.html#CircleElement}
          */
         data class IrCircle(
+            // IrIdentifiable
             override val name: String? = null,
+
+            // IrFilled
+            override val fill: IrFill?,
+            override val fillType: IrFillType,
+            override val fillOpacity: Float,
+
+            // IrStroked
+            override val stroke: IrStroke?,
+            override val strokeOpacity: Float,
+            override val strokeWidth: Float,
+            override val strokeLineCap: IrStrokeLineCap,
+            override val strokeLineJoin: IrStrokeLineJoin,
+            override val strokeMiterLimit: Float,
 
             val cx: Float = 0f,
             val cy: Float = 0f,
@@ -150,6 +181,23 @@ sealed interface TransformOp {
     // TODO: handle skewX and skewY
 }
 
+//sealed interface StyleOp {
+//    // value operator?
+//
+//    // fill ops
+//    data class Fill(val fill: IrFill) : StyleOp
+//    data class FillType(val fillType: IrFillType) : StyleOp
+//    data class FillAlpha(val fillAlpha: Float) : StyleOp
+//
+//    // stroke ops
+//    data class Stroke(val stroke: IrStroke) : StyleOp
+//    data class StrokeAlpha(val strokeAlpha: Float) : StyleOp
+//    data class StrokeLineWidth(val strokeWidth: Float) : StyleOp
+//    data class StrokeLineCap(val strokeLineCap: IrStrokeLineCap) : StyleOp
+//    data class StrokeLineJoin(val strokeLineJoin: IrStrokeLineJoin) : StyleOp
+//    data class StrokeMiterLimit(val strokeMiterLimit: Float) : StyleOp
+//}
+
 enum class IrFillType {
     EvenOdd,
     NonZero,
@@ -158,7 +206,7 @@ enum class IrFillType {
 enum class IrStrokeLineCap(val svgValue: String) {
     Butt("butt"),
     Round("round"),
-    Square( "square"),
+    Square("square"),
 }
 
 // TODO: Add support for miter-clip and arcs

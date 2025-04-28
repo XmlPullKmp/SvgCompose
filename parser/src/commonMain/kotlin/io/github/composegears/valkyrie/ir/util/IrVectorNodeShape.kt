@@ -8,6 +8,17 @@ fun IrShape.IrRect.rectToPath(): IrPath {
 
     return IrPath(
         name = this.name,
+
+        fill = this.fill,
+        fillType = this.fillType,
+        fillOpacity = this.fillOpacity,
+
+        stroke = this.stroke,
+        strokeOpacity = this.strokeOpacity,
+        strokeWidth = this.strokeWidth,
+        strokeLineCap = this.strokeLineCap,
+        strokeLineJoin = this.strokeLineJoin,
+
         pathNodes = listOfNotNull(
             IrPathNode.MoveTo(x + rx, y),
             IrPathNode.HorizontalTo(x + width - rx),
@@ -58,6 +69,17 @@ fun IrShape.IrRect.rectToPath(): IrPath {
 fun IrShape.IrCircle.circleToPath(): IrPath {
     return IrPath(
         name = name,
+
+        fill = this.fill,
+        fillType = this.fillType,
+        fillOpacity = this.fillOpacity,
+
+        stroke = this.stroke,
+        strokeOpacity = this.strokeOpacity,
+        strokeWidth = this.strokeWidth,
+        strokeLineCap = this.strokeLineCap,
+        strokeLineJoin = this.strokeLineJoin,
+
         pathNodes = listOf(
             IrPathNode.MoveTo(cx + r, cy),
             IrPathNode.ArcTo(
